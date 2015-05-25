@@ -1,5 +1,6 @@
+#!/bin/bash
 utils_dir=$(dirname $0)/
-root_dir=$utils_dir../
+root_dir=`pwd`/
 if [ "$utils_dir" == "./utils/" ]; then
     root_dir=./
 fi
@@ -32,17 +33,18 @@ function mapping {
     
     while test $# -gt 0; do
         case "$#_$1" in
-            1_* )
-                # echo "run bash of $1"
-                bash $1 | utils print
+            *_-r ) # raw
+                shift
+                bash $@
+                break
             ;;
-            2_-s )
+            2_-s ) # static
                 shift
                 utils static $1
                 break
             ;;
-            * )
-                echo "error mapping of '$1'" | utils print 500
+            * ) # run bash return html
+                bash $@ | utils print
                 break
             ;;
         esac
