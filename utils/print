@@ -1,0 +1,22 @@
+export http_code=200
+while test $# -gt 0; do
+    case $1 in 
+        2* | 3* | 4* | 5* )
+            # echo "set http code to $1"
+            http_code=$1
+        ;;
+        * )
+            break
+        ;;
+    esac
+    shift
+done
+
+echo -e "HTTP/1.1 $http_code OK\r"
+echo "Content-type: text/html"
+echo
+
+while read line
+do
+    echo $line
+done

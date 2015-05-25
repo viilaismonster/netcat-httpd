@@ -1,0 +1,36 @@
+export http_code=200
+export binary=
+export mime=
+
+while test $# -gt 0; do
+    case $1 in 
+        2* | 3* | 4* | 5* )
+            # echo "set http code to $1"
+            http_code=$1
+        ;;
+        * )
+            binary=$1
+            break
+        ;;
+    esac
+    shift
+done
+
+if [ "$binary" == "" ] || [ ! -f $binary ]; then
+    http_code=404
+    binary=
+fi
+
+if [ "$binary" != "" ] && [ "$mime" == "" ]; then
+    mime=`file --mime-type $binary | awk '{print $2}'`
+fi
+
+echo -e "HTTP/1.1 $http_code OK\r"
+echo "Content-type: $mime"
+echo
+
+if [ "$binary" == "" ]; then
+    echo "file no found"
+else
+    cat $binary
+fi

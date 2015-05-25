@@ -1,0 +1,51 @@
+utils_dir=$(dirname $0)
+
+function utils {
+    bash $utils_dir/$@
+}
+
+function mapping {
+    request=$1
+    shift
+
+    # echo "check mapping of $request -> $@"
+    
+    while test $# -gt 0; do
+        case "$#_$1" in
+            1_* )
+                # echo "run bash of $1"
+                bash $1 | utils print
+            ;;
+            * )
+                echo "error mapping of '$1'" | utils print 500
+                break
+            ;;
+        esac
+        shift
+    done
+}
+
+>&2 echo routing "$@"
+
+static=
+api=`cat $utils_dir/../route_map | grep ^$1" "`
+
+if [ "$api" == "" ] && test -f $utils_dir/../static$1; then
+    static=$utils_dir/../static$1
+fi
+
+# echo "static = $static"
+if ! find $utils_dir/../static -maxdepth 10 | grep ^"$static"$ > /dev/null ; then
+    >&2 echo "illegal access to static $static"
+    static=
+fi
+
+if [ "$api" != "" ]; then
+    # bash `echo $api|awk '{print $2}'` | utils print
+    mapping $api
+elif [ "$static" != "" ]; then
+    utils static $static
+else
+    # >&2 echo "checking static of $utils_dir/../static$1 no found"
+    echo "route "$@" no found" | utils print 500
+fi
