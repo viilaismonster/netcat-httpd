@@ -11,7 +11,7 @@ function cd_to_root {
 
 pipefile="out.pipe"
 nc_args="-l 1234"
-route_args="--mapping route_map"
+route_args="--mapping ./route_map"
 utils_dir=$(dirname $0)/utils/
 
 function utils {
