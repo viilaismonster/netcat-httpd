@@ -2,7 +2,7 @@
 
 function cd_to_root {
     if [ "$(dirname $0)" != "." ]; then
-        # echo "cd to $(dirname $0)"
+        echo "cd to $(dirname $0)"
         cd $(dirname $0)
         ./$(basename $0) $@
         exit
@@ -35,15 +35,24 @@ done
 
 echo "running netcat-httpd server : $nc_args"
 
-rm -f $pipefile
-mkfifo $pipefile
-trap "rm -f $pipefile" EXIT
-while true
-do
-  cat $pipefile | nc $nc_args > >( # parse the netcat output, to build the answer redirected to the pipe "out".
-    export REQUEST=
+qid=0
+function listen {
+  qid=$(($qid+1))
+  _pipe=$pipefile.$(($qid%5))
+  # echo "qid $qid open pipe file $_pipe"
+  rm -f $_pipe
+  mkfifo $_pipe
+  trap "rm -f $_pipe" EXIT
+  forked=0
+  cat $_pipe | nc $nc_args > >( # parse the netcat output, to build the answer redirected to the pipe "out".
+    # export REQUEST=
+    REQUEST=
     while read line
     do
+      if [ $forked -eq 0 ]; then
+          forked=1
+          listen &
+      fi
       line=$(echo "$line" | tr -d '[\r\n]')
 
       if echo "$line" | grep -qE '^GET /' # if line starts with "GET /"
@@ -53,8 +62,13 @@ do
       then
         # call a script here
         # Note: REQUEST is exported, so the script can parse it (to answer 200/403/404 status code + content)
-        utils route $route_args $REQUEST > $pipefile
+        utils route $route_args $REQUEST > $_pipe
       fi
     done
   )
-done
+}
+
+# while true
+# do
+    listen &
+# done
