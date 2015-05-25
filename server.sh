@@ -37,7 +37,7 @@ echo "running netcat-httpd server : $nc_args"
 
 rm -f $pipefile
 mkfifo $pipefile
-trap "rm -f out" EXIT
+trap "rm -f $pipefile" EXIT
 while true
 do
   cat $pipefile | nc $nc_args > >( # parse the netcat output, to build the answer redirected to the pipe "out".
