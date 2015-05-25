@@ -1,8 +1,28 @@
-utils_dir=$(dirname $0)
+utils_dir=$(dirname $0)/
+root_dir=$utils_dir../
+if [ "$utils_dir" == "./utils/" ]; then
+    root_dir=./
+fi
+api_folder=${root_dir}api
+static_folder=${root_dir}static
+mapping_file=${root_dir}route_map
 
 function utils {
-    bash $utils_dir/$@
+    bash $utils_dir$@
 }
+
+while test $# -gt 0; do
+    case $1 in
+        --mapping )
+            shift
+            mapping_file=$1
+        ;;
+        * )
+            break
+        ;;
+    esac
+    shift
+done
 
 function mapping {
     request=$1
@@ -16,6 +36,11 @@ function mapping {
                 # echo "run bash of $1"
                 bash $1 | utils print
             ;;
+            2_-s )
+                shift
+                utils static $1
+                break
+            ;;
             * )
                 echo "error mapping of '$1'" | utils print 500
                 break
@@ -25,27 +50,51 @@ function mapping {
     done
 }
 
->&2 echo routing "$@"
+function check_in_folder {
+    if ! find $1 -maxdepth 10 | grep ^"$2"$ > /dev/null; then
+        return -1
+    fi
+}
+
+# >&2 echo routing "$@"
 
 static=
-api=`cat $utils_dir/../route_map | grep ^$1" "`
+mapping_args=
 
-if [ "$api" == "" ] && test -f $utils_dir/../static$1; then
-    static=$utils_dir/../static$1
+# from $mapping_file looking for mapping args
+if test -f "$mapping_file"; then
+    mapping_args=`cat $mapping_file | grep ^$1" "`
+
+# dynamic mapping mode : find sh-cgi file from mapping_args folder
+elif [ "$mapping_file" == "dynamic" ] && check_in_folder $api_folder $api_folder$1; then
+    mapping_args="$1 $api_folder$1"
+
+# dynamic mapping mode : * -> *default, e.g. / -> /default
+elif [ "$mapping_file" == "dynamic" ] && check_in_folder $api_folder $api_folder$1default; then
+    mapping_args="$1default $api_folder$1default"
 fi
 
-# echo "static = $static"
-if ! find $utils_dir/../static -maxdepth 10 | grep ^"$static"$ > /dev/null ; then
+# when mapping no found, check if static file exists
+if [ "$mapping_args" == "" ] && test -f $static_folder$1; then
+    static=$1
+fi
+
+# ensure static file is in the folder, avoid ../ hacking
+if [ "$static" != "" ] && ! check_in_folder $static_folder $static_folder$static ; then
     >&2 echo "illegal access to static $static"
     static=
+
+# now mapping with static file, update mapping_args with -s argument
+elif [ "$static" != "" ]; then
+    mapping_args="$static -s $static_folder$static"
 fi
 
-if [ "$api" != "" ]; then
-    # bash `echo $api|awk '{print $2}'` | utils print
-    mapping $api
-elif [ "$static" != "" ]; then
-    utils static $static
+# run mapping with args
+if [ "$mapping_args" != "" ]; then
+    >&2 echo "rounting : $mapping_args"
+    mapping $mapping_args
+
 else
-    # >&2 echo "checking static of $utils_dir/../static$1 no found"
-    echo "route "$@" no found" | utils print 500
+    >&2 echo "routing no found : $@"
+    echo "404 no found" | utils print 404
 fi

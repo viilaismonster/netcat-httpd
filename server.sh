@@ -1,14 +1,30 @@
 #!/bin/bash
 
-pipefile="out.pipe"
-nc_args="-l 1234"
-
-function utils {
-    bash ./utils/$@
+function cd_to_root {
+    if [ "$(dirname $0)" != "." ]; then
+        # echo "cd to $(dirname $0)"
+        cd $(dirname $0)
+        ./$(basename $0) $@
+        exit
+    fi
 }
 
+pipefile="out.pipe"
+nc_args="-l 1234"
+route_args="--mapping route_map"
+utils_dir=$(dirname $0)/utils/
+
+function utils {
+    bash $utils_dir$@
+}
+
+args=$@
 while test $# -gt 0; do
     case $1 in
+        --mapping )
+            shift
+            route_args="--mapping $1"
+        ;;
         * )
             nc_args=$@
             break    
@@ -37,7 +53,7 @@ do
       then
         # call a script here
         # Note: REQUEST is exported, so the script can parse it (to answer 200/403/404 status code + content)
-        utils route $REQUEST > $pipefile
+        utils route $route_args $REQUEST > $pipefile
       fi
     done
   )
