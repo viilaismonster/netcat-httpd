@@ -1,9 +1,14 @@
-export http_code=200
+http_code=200
+mime=text/html
 while test $# -gt 0; do
     case $1 in 
         2* | 3* | 4* | 5* )
             # echo "set http code to $1"
             http_code=$1
+        ;;
+        --mime )
+            shift
+            mime=$1
         ;;
         * )
             break
@@ -13,7 +18,7 @@ while test $# -gt 0; do
 done
 
 echo -e "HTTP/1.1 $http_code OK\r"
-echo "Content-type: text/html"
+echo "Content-type: $mime"
 echo
 
 while read line
