@@ -1,3 +1,5 @@
+#!/bin/bash
+
 export http_code=200
 export binary=
 export mime=
@@ -23,6 +25,11 @@ fi
 
 if [ "$binary" != "" ] && [ "$mime" == "" ]; then
     mime=`file --mime-type $binary | awk '{print $2}'`
+    case "$binary" in
+        *.js )
+            mime=text/javascript
+        ;;
+    esac
 fi
 
 echo -e "HTTP/1.1 $http_code OK\r"
