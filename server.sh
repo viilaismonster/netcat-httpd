@@ -68,7 +68,7 @@ function listen {
   # pid check
   if [ ! -f $pidfile ] || [ "`cat $pidfile`" != "$$" ]; then
     log "exit due to pid check"
-    return
+    return 999
   fi
 
   qid=$(($qid+1))
@@ -117,6 +117,9 @@ case `uname` in
     "Linux" )
         while true; do
             listen 1
+            if [ $? -eq 999 ]; then
+                break
+            fi
         done
     ;;
     * )
