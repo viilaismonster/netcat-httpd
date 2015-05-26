@@ -20,12 +20,21 @@ function utils {
     bash $utils_dir$@
 }
 
-args=$@
+debug=0
+init_args=$@
 while test $# -gt 0; do
     case $1 in
         --mapping )
             shift
             route_args="--mapping $1"
+        ;;
+        --debug | -d )
+            debug=1
+        ;;
+        - )
+            shift
+            nc_args=$@
+            break            
         ;;
         * )
             nc_args=$@
@@ -35,20 +44,36 @@ while test $# -gt 0; do
     shift
 done
 
-echo "running netcat-httpd server pid = $$: $nc_args"
+log "running netcat-httpd server pid = $$: $nc_args"
 echo $$ > $pidfile
+
+
+function log {
+    case $1 in
+        D )
+            if [ $debug -eq 0 ]; then
+                return
+            fi
+            # echo $@
+        ;;
+        * )
+            echo $@
+        ;;
+    esac
+    echo $@ >> current.log
+}
 
 qid=0
 function listen {
   # pid check
   if [ ! -f $pidfile ] || [ "`cat $pidfile`" != "$$" ]; then
-    echo "exit due to pid check"
+    log "exit due to pid check"
     return
   fi
 
   qid=$(($qid+1))
   _pipe=$pipefile.$(($qid%5))
-  # echo "qid $qid open pipe file $_pipe"
+  log D "qid $qid open pipe file $_pipe"
   rm -f $_pipe
   mkfifo $_pipe
   # trap "rm -f $_pipe" EXIT
@@ -62,6 +87,7 @@ function listen {
       if [ $forked -eq 0 ]; then
           # echo "fork when req $line"
           forked=1
+          log D "fork when first read"
           listen $args &
       fi
       line=$(echo "$line" | tr -d '[\r\n]')
@@ -73,11 +99,12 @@ function listen {
       then
         # call a script here
         # Note: REQUEST is exported, so the script can parse it (to answer 200/403/404 status code + content)
-        utils route $route_args $REQUEST > $_pipe
+        utils route $route_args $REQUEST > $_pipe 2>> current.log
       fi
     done
     # echo "after request, forked = $forked"
     if [ $forked -eq 0 ]; then
+      log D "fork after io read"
       listen $args &
     fi
   )
