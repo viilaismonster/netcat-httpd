@@ -1,13 +1,7 @@
 #!/bin/bash
 
-function cd_to_root {
-    if [ "$(dirname $0)" != "." ]; then
-        echo "cd to $(dirname $0)"
-        cd $(dirname $0)
-        ./$(basename $0) $@
-        exit
-    fi
-}
+arg0=$0
+init_args=$@
 
 pidfile="current.pid"
 pipefile="out.pipe"
@@ -21,7 +15,6 @@ function utils {
 }
 
 debug=0
-init_args=$@
 while test $# -gt 0; do
     case $1 in
         --mapping )
@@ -71,6 +64,7 @@ function listen {
   fi
 
   qid=$(($qid+1))
+
   log D "$qid enter listen"
   _pipe=$pipefile.$(($qid%5))
   log D "$qid open pipe file $_pipe"
@@ -80,6 +74,13 @@ function listen {
   forked=$1
   args=$@
   line_index=0;
+
+  if [ $forked -eq 0 ] && [ $qid -gt 256 ]; then
+    log D "$qid > 256, restart"
+    (sleep 1 && $arg0 $init_args ) &
+    return 999
+  fi
+
   log D "$qid nc listenting"
   cat $_pipe | nc $nc_args > >( # parse the netcat output, to build the answer redirected to the pipe "out".
     # export REQUEST=
