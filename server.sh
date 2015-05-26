@@ -72,8 +72,9 @@ function listen {
   fi
 
   qid=$(($qid+1))
+  log D "$qid enter listen"
   _pipe=$pipefile.$(($qid%5))
-  log D "qid $qid open pipe file $_pipe"
+  log D "$qid open pipe file $_pipe"
   rm -f $_pipe
   mkfifo $_pipe
   # trap "rm -f $_pipe" EXIT
@@ -87,7 +88,7 @@ function listen {
       if [ $forked -eq 0 ]; then
           # echo "fork when req $line"
           forked=1
-          log D "fork when first read"
+          log D "$qid fork when first read"
           listen $args &
       fi
       line=$(echo "$line" | tr -d '[\r\n]')
@@ -97,6 +98,7 @@ function listen {
         REQUEST=$(echo "$line" | cut -d ' ' -f2) # extract the request
       elif [ "x$line" = x ] # empty line / end of request
       then
+        log D "$qid pass REQUEST($REQUEST) to utils route"
         # call a script here
         # Note: REQUEST is exported, so the script can parse it (to answer 200/403/404 status code + content)
         utils route $route_args $REQUEST > $_pipe 2>> current.log
@@ -104,10 +106,11 @@ function listen {
     done
     # echo "after request, forked = $forked"
     if [ $forked -eq 0 ]; then
-      log D "fork after io read"
+      log D "$qid fork after io read"
       listen $args &
     fi
   )
+  log D "$qid exit listen"
 }
 
 case `uname` in
@@ -118,9 +121,11 @@ case `uname` in
         while true; do
             listen 1
             if [ $? -eq 999 ]; then
+                log D "break due to return code 999"
                 break
             fi
         done
+        log D "exit while"
     ;;
     * )
         echo "unknown os `uname`"
