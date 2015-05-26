@@ -42,7 +42,7 @@ function listen {
   # echo "qid $qid open pipe file $_pipe"
   rm -f $_pipe
   mkfifo $_pipe
-  trap "rm -f $_pipe" EXIT
+  # trap "rm -f $_pipe" EXIT
   forked=0
   cat $_pipe | nc $nc_args > >( # parse the netcat output, to build the answer redirected to the pipe "out".
     # export REQUEST=
@@ -50,6 +50,7 @@ function listen {
     while read line
     do
       if [ $forked -eq 0 ]; then
+          # echo "fork when req $line"
           forked=1
           listen &
       fi
@@ -65,10 +66,11 @@ function listen {
         utils route $route_args $REQUEST > $_pipe
       fi
     done
+    # echo "after request, forked = $forked"
+    if [ $forked -eq 0 ]; then
+      listen &
+    fi
   )
 }
 
-# while true
-# do
-    listen &
-# done
+listen &
