@@ -44,10 +44,6 @@ while test $# -gt 0; do
     shift
 done
 
-log "running netcat-httpd server pid = $$: $nc_args"
-echo $$ > $pidfile
-
-
 function log {
     case $1 in
         D )
@@ -62,6 +58,9 @@ function log {
     esac
     echo $@ >> current.log
 }
+
+log "running netcat-httpd server pid = $$: $nc_args"
+echo $$ > $pidfile
 
 qid=0
 function listen {
@@ -80,11 +79,14 @@ function listen {
   # trap "rm -f $_pipe" EXIT
   forked=$1
   args=$@
+  line_index=0;
+  log D "$qid nc listenting"
   cat $_pipe | nc $nc_args > >( # parse the netcat output, to build the answer redirected to the pipe "out".
     # export REQUEST=
     REQUEST=
     while read line
     do
+      line_index=$(($line_index+1))
       if [ $forked -eq 0 ]; then
           # echo "fork when req $line"
           forked=1
@@ -92,6 +94,8 @@ function listen {
           listen $args &
       fi
       line=$(echo "$line" | tr -d '[\r\n]')
+      
+      log D "$qid $line_index. $line"
 
       if echo "$line" | grep -qE '^GET /' # if line starts with "GET /"
       then
