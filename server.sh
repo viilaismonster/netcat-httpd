@@ -9,10 +9,12 @@ function cd_to_root {
     fi
 }
 
+pidfile="current.pid"
 pipefile="out.pipe"
 nc_args="-l 1234"
 route_args="--mapping ./route_map"
 utils_dir=$(dirname $0)/utils/
+
 
 function utils {
     bash $utils_dir$@
@@ -33,10 +35,17 @@ while test $# -gt 0; do
     shift
 done
 
-echo "running netcat-httpd server : $nc_args"
+echo "running netcat-httpd server pid = $$: $nc_args"
+echo $$ > $pidfile
 
 qid=0
 function listen {
+  # pid check
+  if [ ! -f $pidfile ] || [ "`cat $pidfile`" != "$$" ]; then
+    echo "exit due to pid check"
+    return
+  fi
+
   qid=$(($qid+1))
   _pipe=$pipefile.$(($qid%5))
   # echo "qid $qid open pipe file $_pipe"

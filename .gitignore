@@ -2,3 +2,4 @@
 /api/*
 /out.pipe
 .DS_Store
+current.pid
