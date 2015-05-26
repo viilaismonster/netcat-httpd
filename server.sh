@@ -52,7 +52,8 @@ function listen {
   rm -f $_pipe
   mkfifo $_pipe
   # trap "rm -f $_pipe" EXIT
-  forked=0
+  forked=$1
+  args=$@
   cat $_pipe | nc $nc_args > >( # parse the netcat output, to build the answer redirected to the pipe "out".
     # export REQUEST=
     REQUEST=
@@ -61,7 +62,7 @@ function listen {
       if [ $forked -eq 0 ]; then
           # echo "fork when req $line"
           forked=1
-          listen &
+          listen $args &
       fi
       line=$(echo "$line" | tr -d '[\r\n]')
 
@@ -77,9 +78,23 @@ function listen {
     done
     # echo "after request, forked = $forked"
     if [ $forked -eq 0 ]; then
-      listen &
+      listen $args &
     fi
   )
 }
 
-listen &
+case `uname` in
+    "Darwin" )
+        listen 0 &
+    ;;
+    "Linux" )
+        while true; do
+            listen 1
+        done
+    ;;
+    * )
+        echo "unknown os `uname`"
+    ;;
+esac
+
+
