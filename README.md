@@ -16,7 +16,7 @@ partially tested under `OS X 10.9.5 Mavericks`
 
 ## SYNOPSIS  
 
-`./server.sh [--mapping path_to_mapping_file] [nc_args]`
+`./server.sh [--mapping path_to_mapping_file] [--debug] [- nc_args]`
 
 
 ## DESCRIPTION  
@@ -33,6 +33,10 @@ a typical mapping_file looks like below
 
 alternatively, you can use `--mapping dynamic` for dynamic mapping rule  
 fyi. static files are always mapped dynamically
+
+`--debug | -d`  
+normally, netcat-httpd will log output to `current.log` file,  
+enable `--debug` option will output debug information such like pipe openting state to log file
 
 `nc_args`  
 check `man nc` for more detail  
