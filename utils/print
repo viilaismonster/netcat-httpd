@@ -1,5 +1,8 @@
+#!/bin/bash
+
 http_code=200
 mime=text/html
+
 while test $# -gt 0; do
     case $1 in 
         2* | 3* | 4* | 5* )
