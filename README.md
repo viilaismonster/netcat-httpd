@@ -32,7 +32,7 @@ fyi. static files are always mapped dynamically
 
 `--debug | -d`  
 normally, netcat-httpd will log output to `current.log` file,  
-enable `--debug` option will output debug information such like pipe openting state to log file
+enable `--debug` option will log verbosely
 
 `ncargs`  
 check `man nc` for more detail  
