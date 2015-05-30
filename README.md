@@ -1,11 +1,7 @@
 netcat-httpd
 ============
 
-accoring to `man nc`, it's common uses include
-
-* shell-script based HTTP clients and servers
-
-this a httpd server based on netcat  
+a httpd server, based on `nc` and pure shell scripts
 
 ## FEATURE
 
