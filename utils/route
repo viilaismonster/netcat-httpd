@@ -67,6 +67,26 @@ mapping_args=
 if test -f "$mapping_file"; then
     mapping_args=`cat $mapping_file | grep ^$1" "`
 
+function regex_mapping {
+    cat $mapping_file| grep '^~' | while read line; do
+        regex=`echo $line|awk '{print $1}'`
+        regex=${regex//\~/}
+        # >&2 echo "test $1 with $regex"
+        if [ "$regex" != ""  ] && [[ "$1" =~ $regex ]]; then
+            # >&2 echo "matched! ${BASH_REMATCH[1]}"
+            echo $line ${BASH_REMATCH[@]}
+            break;
+        fi
+        # >&2 echo "pass. [[ \"$1\" =~ $regex ]] && echo ok -> "`[[ "$1" =~ $regex ]] && echo "ok"`
+    done
+}
+
+if [ "$mapping_args" == "" ] && test -f "$mapping_file"; then
+    mapping_args=`regex_mapping $1`
+fi
+
+# >&2 echo "mapping args = $mapping_args"
+
 # dynamic mapping mode : find sh-cgi file from mapping_args folder
 elif [ "$mapping_file" == "dynamic" ] && check_in_folder $api_folder $api_folder$1; then
     mapping_args="$1 $api_folder$1"

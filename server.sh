@@ -49,19 +49,22 @@ function log {
             echo $@
         ;;
     esac
-    echo $@ >> current.log
+    echo "[$$] "$@ >> current.log
 }
 
 log "running netcat-httpd server pid = $$: $nc_args"
 echo $$ > $pidfile
 
+function pid_check {
+  if [ ! -f $pidfile ] || [ "`cat $pidfile`" != "$$" ]; then
+    log "pid changed!"
+    return 1
+  fi
+}
+
 qid=0
 function listen {
-  # pid check
-  if [ ! -f $pidfile ] || [ "`cat $pidfile`" != "$$" ]; then
-    log "exit due to pid check"
-    return 999
-  fi
+  ! pid_check && return 999
 
   qid=$(($qid+1))
 
@@ -78,16 +81,20 @@ function listen {
   if [ $forked -eq 0 ] && [ $qid -gt 256 ]; then
     log D "$qid > 256, restart"
     (sleep 1 && $arg0 $init_args ) &
-    return 999
+    return 1
   fi
 
-  log D "$qid nc listenting"
+  log D "$qid nc listening"
   cat $_pipe | nc $nc_args > >( # parse the netcat output, to build the answer redirected to the pipe "out".
+    log D "$qid nc listening enter $?"
     # export REQUEST=
     REQUEST=
+    RESPONSE=
     while read line
     do
       line_index=$(($line_index+1))
+      log D "$qid $line_index. $line"
+
       if [ $forked -eq 0 ]; then
           # echo "fork when req $line"
           forked=1
@@ -95,8 +102,6 @@ function listen {
           listen $args &
       fi
       line=$(echo "$line" | tr -d '[\r\n]')
-      
-      log D "$qid $line_index. $line"
 
       if echo "$line" | grep -qE '^GET /' # if line starts with "GET /"
       then
@@ -107,12 +112,19 @@ function listen {
         # call a script here
         # Note: REQUEST is exported, so the script can parse it (to answer 200/403/404 status code + content)
         utils route $route_args $REQUEST > $_pipe 2>> current.log
+        RESPONSE=1
       fi
     done
     # echo "after request, forked = $forked"
     if [ $forked -eq 0 ]; then
       log D "$qid fork after io read"
       listen $args &
+    fi
+    log D "$qid nc listening exit"
+    if [ "$RESPONSE" == "" ]; then
+        log "$qid 500.no response"
+        sleep 1
+        echo "" > $_pipe
     fi
   )
   log D "$qid exit listen"
@@ -124,11 +136,10 @@ case `uname` in
     ;;
     "Linux" )
         while true; do
+            ! pid_check && break
             listen 1
-            if [ $? -eq 999 ]; then
-                log D "break due to return code 999"
-                break
-            fi
+            # ret=$?
+            # log "listen return $ret"
         done
         log D "exit while"
     ;;

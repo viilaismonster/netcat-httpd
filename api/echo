@@ -1,0 +1,5 @@
+#!/bin/bash
+
+echo "running echo with $# : $@"
+shift
+echo "$1"

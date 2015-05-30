@@ -1,1 +1,3 @@
-/ api/default
+/                   api/default
+~^/echo/(.*)        api/echo
+~boov               api/echo
